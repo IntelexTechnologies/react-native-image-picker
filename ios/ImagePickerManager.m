@@ -190,7 +190,8 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 
         // Check permissions
         void (^showPickerViewController)() = ^void() {
-            dispatch_async(dispatch_get_main_queue(), ^{
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+            1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
                 UIViewController *root = RCTPresentedViewController();
                 @try {
                     [root presentViewController:self.picker animated:YES completion:nil];
