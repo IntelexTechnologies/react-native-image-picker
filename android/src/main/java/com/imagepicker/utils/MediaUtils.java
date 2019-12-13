@@ -20,7 +20,6 @@ import com.imagepicker.media.ImageConfig;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -39,11 +38,13 @@ public class MediaUtils
 {
     public static @Nullable File createNewFile(@NonNull final Context reactContext,
                                                @NonNull final ReadableMap options,
-                                               @NonNull final boolean forceLocal)
+                                               @NonNull final boolean forceLocal,
+                                               @NonNull String extension)
     {
         final String filename = new StringBuilder("image-")
                 .append(UUID.randomUUID().toString())
-                .append(".jpg")
+                .append(".")
+                .append(extension)
                 .toString();
 
         final File path = ReadableMapUtils.hasAndNotNullReadableMap(options, "storageOptions")
@@ -83,20 +84,14 @@ public class MediaUtils
                                                        @NonNull final ImageConfig imageConfig,
                                                        int initialWidth,
                                                        int initialHeight,
+                                                       Boolean forceLocal,
+                                                       String extension,
                                                        final int requestCode)
     {
         BitmapFactory.Options imageOptions = new BitmapFactory.Options();
         imageOptions.inScaled = false;
-        imageOptions.inSampleSize = 1;
-
-        if (imageConfig.maxWidth != 0 || imageConfig.maxHeight != 0) {
-            while ((imageConfig.maxWidth == 0 || initialWidth > 2 * imageConfig.maxWidth) &&
-                   (imageConfig.maxHeight == 0 || initialHeight > 2 * imageConfig.maxHeight)) {
-                imageOptions.inSampleSize *= 2;
-                initialHeight /= 2;
-                initialWidth /= 2;
-            }
-        }
+        SampleSizeRatioCalculation sampleSizeAndRatio = calculateInSampleSizeAndRatio(initialWidth, initialHeight, imageConfig.maxWidth, imageConfig.maxHeight);
+        imageOptions.inSampleSize = sampleSizeAndRatio.InSampleSize;
 
         Bitmap photo = BitmapFactory.decodeFile(imageConfig.original.getAbsolutePath(), imageOptions);
 
@@ -112,21 +107,15 @@ public class MediaUtils
         {
             result = result.withMaxWidth(initialWidth);
         }
-        if (imageConfig.maxHeight == 0 || imageConfig.maxWidth > initialHeight)
+        if (imageConfig.maxHeight == 0 || imageConfig.maxHeight > initialHeight)
         {
             result = result.withMaxHeight(initialHeight);
         }
 
-        double widthRatio = (double) result.maxWidth / initialWidth;
-        double heightRatio = (double) result.maxHeight / initialHeight;
-
-        double ratio = (widthRatio < heightRatio)
-                ? widthRatio
-                : heightRatio;
-
+        double postScaleRatio = sampleSizeAndRatio.DesiredScalingRatio * sampleSizeAndRatio.InSampleSize;
         Matrix matrix = new Matrix();
         matrix.postRotate(result.rotation);
-        matrix.postScale((float) ratio, (float) ratio);
+        matrix.postScale((float) postScaleRatio, (float) postScaleRatio);
 
         ExifInterface exif;
         try
@@ -152,13 +141,14 @@ public class MediaUtils
         {
             e.printStackTrace();
         }
-
+        
         scaledPhoto = Bitmap.createBitmap(photo, 0, 0, photo.getWidth(), photo.getHeight(), matrix, true);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        scaledPhoto.compress(Bitmap.CompressFormat.JPEG, result.quality, bytes);
+        Bitmap.CompressFormat format = extension.equals("png") ? Bitmap.CompressFormat.PNG: Bitmap.CompressFormat.JPEG;
+        scaledPhoto.compress(format, result.quality, bytes);
 
-        final boolean forceLocal = requestCode == REQUEST_LAUNCH_IMAGE_CAPTURE;
-        final File resized = createNewFile(context, options, !forceLocal);
+        final boolean finalForceLocal = (requestCode != REQUEST_LAUNCH_IMAGE_CAPTURE) || forceLocal;
+        final File resized = createNewFile(context, options, finalForceLocal, extension);
 
         if (resized == null)
         {
@@ -389,4 +379,33 @@ public class MediaUtils
             this.error = error;
         }
     }
+
+    public static String getExtensionFromFile(String filename) {
+        return filename.isEmpty() ? "": filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+    }
+
+    private static SampleSizeRatioCalculation calculateInSampleSizeAndRatio(int width, int height, int reqWidth, int reqHeight) {
+        SampleSizeRatioCalculation calc = new SampleSizeRatioCalculation();
+        double desiredWidthRatio = 1.0;
+        double desiredHeightRatio = 1.0;
+        if (reqWidth != 0 && reqWidth < width) {
+            desiredWidthRatio = (double)width / (double)reqWidth;
+        }
+        if (reqHeight != 0 && reqHeight < height) {
+            desiredHeightRatio = (double)height / (double)reqHeight;
+        }
+        double targetRatio = desiredWidthRatio > desiredHeightRatio ? desiredWidthRatio : desiredHeightRatio;
+        calc.DesiredScalingRatio = 1.0 / targetRatio;
+        while (targetRatio / 2 > 1.0) {
+            calc.InSampleSize *= 2;
+            targetRatio /= 2;
+        }
+        return calc;
+    }
+
+}
+
+class SampleSizeRatioCalculation {
+    public int InSampleSize = 1;
+    public double DesiredScalingRatio = 1.0;
 }

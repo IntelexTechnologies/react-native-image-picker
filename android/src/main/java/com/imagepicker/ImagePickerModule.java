@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
+import java.util.Arrays;
 import java.util.List;
 
 import com.facebook.react.modules.core.PermissionListener;
@@ -54,6 +55,7 @@ import com.facebook.react.modules.core.PermissionAwareActivity;
 import static com.imagepicker.utils.MediaUtils.*;
 import static com.imagepicker.utils.MediaUtils.createNewFile;
 import static com.imagepicker.utils.MediaUtils.getResizedImage;
+import static com.imagepicker.utils.MediaUtils.getExtensionFromFile;
 
 public class ImagePickerModule extends ReactContextBaseJavaModule
         implements ActivityEventListener
@@ -75,7 +77,9 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   private Boolean noData = false;
   private Boolean pickVideo = false;
   private ImageConfig imageConfig = new ImageConfig(null, null, 0, 0, 100, 0, false);
-
+  private Boolean forceLocal = false;
+  private List<String> resizeFileTypes;
+  private double resizeMaxAspectRatio = Double.MAX_VALUE;
   @Deprecated
   private int videoQuality = 1;
 
@@ -255,7 +259,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
       requestCode = REQUEST_LAUNCH_IMAGE_CAPTURE;
       cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
-      final File original = createNewFile(reactContext, this.options, false);
+      final File original = createNewFile(reactContext, this.options, this.forceLocal, "jpg");
       imageConfig = imageConfig.withOriginalFile(original);
 
       if (imageConfig.original != null) {
@@ -441,9 +445,12 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     int initialWidth = options.outWidth;
     int initialHeight = options.outHeight;
     updatedResultResponse(uri, imageConfig.original.getAbsolutePath());
-
+    double aspectRatio = initialWidth > initialHeight ? initialWidth / (double)initialHeight : initialHeight / (double)initialWidth;
+    String extension = getExtensionFromFile(imageConfig.original.getName());
     // don't create a new file if contraint are respected
-    if (imageConfig.useOriginal(initialWidth, initialHeight, result.currentRotation))
+    if (imageConfig.useOriginal(initialWidth, initialHeight, result.currentRotation)
+        || aspectRatio > this.resizeMaxAspectRatio
+        || (this.resizeFileTypes != null && !this.resizeFileTypes.contains(extension)))
     {
       responseHelper.putInt("width", initialWidth);
       responseHelper.putInt("height", initialHeight);
@@ -451,7 +458,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     }
     else
     {
-      imageConfig = getResizedImage(reactContext, this.options, imageConfig, initialWidth, initialHeight, requestCode);
+      imageConfig = getResizedImage(reactContext, this.options, imageConfig, initialWidth, initialHeight, this.forceLocal, extension, requestCode);
       if (imageConfig.resized == null)
       {
         removeUselessFiles(requestCode, imageConfig);
@@ -727,5 +734,20 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     if (options.hasKey("durationLimit")) {
       videoDurationLimit = options.getInt("durationLimit");
     }
+    forceLocal = false;
+    if (options.hasKey("storageOptions") && options.getMap("storageOptions").hasKey("forceLocal")) {
+      forceLocal = options.getMap("storageOptions").getBoolean("forceLocal");
+    }
+    if (options.hasKey("resizeFileTypes")) {
+        String fileTypes = options.getString("resizeFileTypes").toLowerCase();
+        if(!fileTypes.isEmpty()) {
+            resizeFileTypes = Arrays.asList(fileTypes.split(",", 0));
+        }
+    }
+    
+    if (options.hasKey("resizeMaxAspectRatio")) {
+      resizeMaxAspectRatio = options.getDouble("resizeMaxAspectRatio");
+    }
   }
 }
+
