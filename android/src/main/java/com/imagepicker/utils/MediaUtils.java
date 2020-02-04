@@ -86,7 +86,7 @@ public class MediaUtils
                                                        int initialHeight,
                                                        Boolean forceLocal,
                                                        String extension,
-                                                       NonNull ResponseHelper responseHelper,
+                                                       @NonNull ResponseHelper responseHelper,
                                                        final int requestCode)
     {
         BitmapFactory.Options imageOptions = new BitmapFactory.Options();
