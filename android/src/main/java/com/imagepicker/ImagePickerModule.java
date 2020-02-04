@@ -458,7 +458,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     }
     else
     {
-      imageConfig = getResizedImage(reactContext, this.options, imageConfig, initialWidth, initialHeight, this.forceLocal, extension, requestCode);
+      imageConfig = getResizedImage(reactContext, this.options, imageConfig, initialWidth, initialHeight, this.forceLocal, extension, responseHelper, requestCode);
       if (imageConfig.resized == null)
       {
         removeUselessFiles(requestCode, imageConfig);
