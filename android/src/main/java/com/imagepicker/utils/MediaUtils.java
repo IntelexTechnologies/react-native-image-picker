@@ -86,6 +86,7 @@ public class MediaUtils
                                                        int initialHeight,
                                                        Boolean forceLocal,
                                                        String extension,
+                                                       @NonNull ResponseHelper responseHelper,
                                                        final int requestCode)
     {
         BitmapFactory.Options imageOptions = new BitmapFactory.Options();
@@ -128,12 +129,15 @@ public class MediaUtils
             {
                 case 6:
                     matrix.postRotate(90);
+                    responseHelper.putInt("originalRotation", 0);
                     break;
                 case 3:
                     matrix.postRotate(180);
+                    responseHelper.putInt("originalRotation", 0);
                     break;
                 case 8:
                     matrix.postRotate(270);
+                    responseHelper.putInt("originalRotation", 0);
                     break;
             }
         }
