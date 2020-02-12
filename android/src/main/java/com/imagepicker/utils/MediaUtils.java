@@ -69,6 +69,34 @@ public class MediaUtils
         return result;
     }
 
+    public static @Nullable File createNewFile(@NonNull final Context reactContext,
+                                               @NonNull final ReadableMap options,
+                                               @NonNull final boolean forceLocal,
+                                               @NonNull String extension,
+                                               final String filename)
+    {
+       final File path = ReadableMapUtils.hasAndNotNullReadableMap(options, "storageOptions")
+                && ReadableMapUtils.hasAndNotEmptyString(options.getMap("storageOptions"), "path")
+                ? new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), options.getMap("storageOptions").getString("path"))
+                : (!forceLocal ? Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                              : reactContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES));
+
+        File result = new File(path, filename);
+
+        try
+        {
+            path.mkdirs();
+            result.createNewFile();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            result = null;
+        }
+
+        return result;
+    }
+
     /**
      * Create a resized image to fulfill the maxWidth/maxHeight, quality and rotation values
      *
@@ -151,8 +179,24 @@ public class MediaUtils
         Bitmap.CompressFormat format = extension.equals("png") ? Bitmap.CompressFormat.PNG: Bitmap.CompressFormat.JPEG;
         scaledPhoto.compress(format, result.quality, bytes);
 
+        String[] unsupportedTypesList = {"heic", "heif", "tif", "tiff", "bmp"};
+        String originalName = imageConfig.original.getName();
+        for (String type : unsupportedTypesList) {
+            if (extension.equals(type)) {
+                extension = "jpg";
+                break;
+            }
+            if (extension.equals(type.toUpperCase())) {
+                extension = "JPG";
+                break;
+            }
+        }
+        String[] originalNameArr = originalName.split("\\.");
+        originalNameArr[originalNameArr.length - 1] = extension;
+        String newFileName = String.join(".", originalNameArr);
+
         final boolean finalForceLocal = (requestCode != REQUEST_LAUNCH_IMAGE_CAPTURE) || forceLocal;
-        final File resized = createNewFile(context, options, finalForceLocal, extension);
+        File resized = createNewFile(context, options, finalForceLocal, extension, newFileName);
 
         if (resized == null)
         {
