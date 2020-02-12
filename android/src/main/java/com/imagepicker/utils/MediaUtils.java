@@ -196,7 +196,7 @@ public class MediaUtils
         String newFileName = String.join(".", originalNameArr);
 
         final boolean finalForceLocal = (requestCode != REQUEST_LAUNCH_IMAGE_CAPTURE) || forceLocal;
-        File resized = createNewFile(context, options, finalForceLocal, extension, newFileName);
+        final File resized = createNewFile(context, options, finalForceLocal, extension, newFileName);
 
         if (resized == null)
         {
