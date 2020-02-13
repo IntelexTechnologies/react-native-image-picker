@@ -179,17 +179,11 @@ public class MediaUtils
         Bitmap.CompressFormat format = extension.equals("png") ? Bitmap.CompressFormat.PNG: Bitmap.CompressFormat.JPEG;
         scaledPhoto.compress(format, result.quality, bytes);
 
-        String[] unsupportedTypesList = {"heic", "heif", "tif", "tiff", "bmp"};
         String originalName = imageConfig.original.getName();
-        for (String type : unsupportedTypesList) {
-            if (extension.equals(type)) {
-                extension = "jpg";
-                break;
-            }
-            if (extension.equals(type.toUpperCase())) {
-                extension = "JPG";
-                break;
-            }
+        String[] attachmentsConvertJPG = {};
+        if (options.hasKey("attachmentsConvertJPG")) attachmentsConvertJPG = options.getString("attachmentsConvertJPG").split(",");
+        for (String type : attachmentsConvertJPG) {
+            if (extension.equals(type)) extension = "jpg";
         }
         String[] originalNameArr = originalName.split("\\.");
         originalNameArr[originalNameArr.length - 1] = extension;

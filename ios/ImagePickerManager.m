@@ -309,7 +309,13 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 
             if (imageURL) {
                 PHAsset *pickedAsset = [PHAsset fetchAssetsWithALAssetURLs:@[imageURL] options:nil].lastObject;
+
                 NSString *originalFilename = [self originalFilenameForAsset:pickedAsset assetType:PHAssetResourceTypePhoto];
+                NSArray *unsupportedTypesArray = @[@"heic", @"heif", @"tiff", @"tif", @"bmp"];
+                for (NSString *type in unsupportedTypesArray) {
+                    originalFilename = [originalFilename stringByReplacingOccurrencesOfString:type withString:@"jpg"];
+                    originalFilename = [originalFilename stringByReplacingOccurrencesOfString:[type uppercaseString] withString:@"JPG"];
+                }
                 self.response[@"fileName"] = originalFilename ?: [NSNull null];
                 if (pickedAsset.location) {
                     self.response[@"latitude"] = @(pickedAsset.location.coordinate.latitude);
