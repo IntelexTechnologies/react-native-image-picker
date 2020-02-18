@@ -444,14 +444,18 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     BitmapFactory.decodeFile(imageConfig.original.getAbsolutePath(), options);
     int initialWidth = options.outWidth;
     int initialHeight = options.outHeight;
-    updatedResultResponse(uri, imageConfig.original.getAbsolutePath());
     double aspectRatio = initialWidth > initialHeight ? initialWidth / (double)initialHeight : initialHeight / (double)initialWidth;
     String extension = getExtensionFromFile(imageConfig.original.getName());
+    int originalFileSize = Integer.parseInt(String.valueOf(imageConfig.original.length()))/(1024*1024); // size in mb
+    boolean higherThanNougat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N;
+
     // don't create a new file if contraint are respected
-    if (imageConfig.useOriginal(initialWidth, initialHeight, result.currentRotation)
+    if ((imageConfig.useOriginal(initialWidth, initialHeight, result.currentRotation)
         || aspectRatio > this.resizeMaxAspectRatio
         || (this.resizeFileTypes != null && !this.resizeFileTypes.contains(extension)))
+        && (originalFileSize <= 20 || higherThanNougat))
     {
+      updatedResultResponse(uri, imageConfig.original.getAbsolutePath());
       responseHelper.putInt("width", initialWidth);
       responseHelper.putInt("height", initialHeight);
       fileScan(reactContext, imageConfig.original.getAbsolutePath());
