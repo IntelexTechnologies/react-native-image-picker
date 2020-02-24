@@ -115,7 +115,8 @@ public class MediaUtils
                                                        Boolean forceLocal,
                                                        String extension,
                                                        @NonNull ResponseHelper responseHelper,
-                                                       final int requestCode)
+                                                       final int requestCode,
+                                                       final int imageQuality)
     {
         BitmapFactory.Options imageOptions = new BitmapFactory.Options();
         imageOptions.inScaled = false;
@@ -177,7 +178,7 @@ public class MediaUtils
         scaledPhoto = Bitmap.createBitmap(photo, 0, 0, photo.getWidth(), photo.getHeight(), matrix, true);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         Bitmap.CompressFormat format = extension.equals("png") ? Bitmap.CompressFormat.PNG: Bitmap.CompressFormat.JPEG;
-        scaledPhoto.compress(format, result.quality, bytes);
+        scaledPhoto.compress(format, imageQuality, bytes);
 
         String originalName = imageConfig.original.getName();
         String[] attachmentsConvertJPG = {};

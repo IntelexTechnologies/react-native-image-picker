@@ -448,10 +448,16 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     updatedResultResponse(uri, imageConfig.original.getAbsolutePath());
     double aspectRatio = initialWidth > initialHeight ? initialWidth / (double)initialHeight : initialHeight / (double)initialWidth;
     String extension = getExtensionFromFile(imageConfig.original.getName());
+    int imageQuality = imageConfig.quality;
+    boolean mustResize = true;
+
+    if (imageConfig.useOriginal(initialWidth, initialHeight, result.currentRotation) || aspectRatio > this.resizeMaxAspectRatio) {
+      mustResize = false;
+      imageQuality = 100;
+    }
+
     // don't create a new file if constraints are respected and file doesn't need conversion
-    if ((imageConfig.useOriginal(initialWidth, initialHeight, result.currentRotation)
-        || aspectRatio > this.resizeMaxAspectRatio
-        || (this.resizeFileTypes != null && !this.resizeFileTypes.contains(extension)))
+    if ((!mustResize || (this.resizeFileTypes != null && !this.resizeFileTypes.contains(extension)))
         && (this.attachmentsConvertJPG != null && !this.attachmentsConvertJPG.contains(extension)))
     {
       responseHelper.putInt("width", initialWidth);
@@ -460,7 +466,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     }
     else
     {
-      imageConfig = getResizedImage(reactContext, this.options, imageConfig, initialWidth, initialHeight, this.forceLocal, extension, responseHelper, requestCode);
+      imageConfig = getResizedImage(reactContext, this.options, imageConfig, initialWidth, initialHeight, this.forceLocal, extension, responseHelper, requestCode, imageQuality);
       if (imageConfig.resized == null)
       {
         removeUselessFiles(requestCode, imageConfig);
