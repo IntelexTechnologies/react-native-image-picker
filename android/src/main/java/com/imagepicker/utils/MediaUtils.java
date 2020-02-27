@@ -11,6 +11,7 @@ import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.text.TextUtils;
 
 import com.facebook.react.bridge.ReadableMap;
 import com.imagepicker.ImagePickerModule;
@@ -188,7 +189,7 @@ public class MediaUtils
         }
         String[] originalNameArr = originalName.split("\\.");
         originalNameArr[originalNameArr.length - 1] = extension;
-        String newFileName = String.join(".", originalNameArr);
+        String newFileName = TextUtils.join(".", originalNameArr);
 
         final boolean finalForceLocal = (requestCode != REQUEST_LAUNCH_IMAGE_CAPTURE) || forceLocal;
         final File resized = createNewFile(context, options, finalForceLocal, extension, newFileName);
