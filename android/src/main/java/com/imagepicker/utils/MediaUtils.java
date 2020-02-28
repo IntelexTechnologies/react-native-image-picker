@@ -116,14 +116,11 @@ public class MediaUtils
                                                        Boolean forceLocal,
                                                        String extension,
                                                        @NonNull ResponseHelper responseHelper,
-                                                       final int requestCode,
-                                                       final int imageQuality)
+                                                       final int requestCode)
     {
         BitmapFactory.Options imageOptions = new BitmapFactory.Options();
         imageOptions.inScaled = false;
-        SampleSizeRatioCalculation sampleSizeAndRatio = imageQuality == 100 ?
-            calculateInSampleSizeAndRatio(initialWidth, initialHeight, initialWidth, initialHeight) :
-            calculateInSampleSizeAndRatio(initialWidth, initialHeight, imageConfig.maxWidth, imageConfig.maxHeight);
+        SampleSizeRatioCalculation sampleSizeAndRatio = calculateInSampleSizeAndRatio(initialWidth, initialHeight, imageConfig.maxWidth, imageConfig.maxHeight);
         imageOptions.inSampleSize = sampleSizeAndRatio.InSampleSize;
 
         Bitmap photo = BitmapFactory.decodeFile(imageConfig.original.getAbsolutePath(), imageOptions);
@@ -136,11 +133,11 @@ public class MediaUtils
         ImageConfig result = imageConfig;
 
         Bitmap scaledPhoto = null;
-        if (imageConfig.maxWidth == 0 || imageConfig.maxWidth > initialWidth || imageQuality == 100)
+        if (imageConfig.maxWidth == 0 || imageConfig.maxWidth > initialWidth)
         {
             result = result.withMaxWidth(initialWidth);
         }
-        if (imageConfig.maxHeight == 0 || imageConfig.maxHeight > initialHeight || imageQuality == 100)
+        if (imageConfig.maxHeight == 0 || imageConfig.maxHeight > initialHeight)
         {
             result = result.withMaxHeight(initialHeight);
         }
@@ -181,7 +178,7 @@ public class MediaUtils
         scaledPhoto = Bitmap.createBitmap(photo, 0, 0, photo.getWidth(), photo.getHeight(), matrix, true);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         Bitmap.CompressFormat format = extension.equals("png") ? Bitmap.CompressFormat.PNG: Bitmap.CompressFormat.JPEG;
-        scaledPhoto.compress(format, imageQuality, bytes);
+        scaledPhoto.compress(format, imageConfig.quality, bytes);
 
         String originalName = imageConfig.original.getName();
         String[] attachmentsConvertJPG = {};
