@@ -121,7 +121,9 @@ public class MediaUtils
     {
         BitmapFactory.Options imageOptions = new BitmapFactory.Options();
         imageOptions.inScaled = false;
-        SampleSizeRatioCalculation sampleSizeAndRatio = calculateInSampleSizeAndRatio(initialWidth, initialHeight, imageConfig.maxWidth, imageConfig.maxHeight);
+        SampleSizeRatioCalculation sampleSizeAndRatio = imageQuality == 100 ?
+            calculateInSampleSizeAndRatio(initialWidth, initialHeight, initialWidth, initialHeight) :
+            calculateInSampleSizeAndRatio(initialWidth, initialHeight, imageConfig.maxWidth, imageConfig.maxHeight);
         imageOptions.inSampleSize = sampleSizeAndRatio.InSampleSize;
 
         Bitmap photo = BitmapFactory.decodeFile(imageConfig.original.getAbsolutePath(), imageOptions);
@@ -134,11 +136,11 @@ public class MediaUtils
         ImageConfig result = imageConfig;
 
         Bitmap scaledPhoto = null;
-        if (imageConfig.maxWidth == 0 || imageConfig.maxWidth > initialWidth)
+        if (imageConfig.maxWidth == 0 || imageConfig.maxWidth > initialWidth || imageQuality == 100)
         {
             result = result.withMaxWidth(initialWidth);
         }
-        if (imageConfig.maxHeight == 0 || imageConfig.maxHeight > initialHeight)
+        if (imageConfig.maxHeight == 0 || imageConfig.maxHeight > initialHeight || imageQuality == 100)
         {
             result = result.withMaxHeight(initialHeight);
         }
