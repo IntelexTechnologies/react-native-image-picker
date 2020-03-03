@@ -11,6 +11,7 @@ import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.text.TextUtils;
 
 import com.facebook.react.bridge.ReadableMap;
 import com.imagepicker.ImagePickerModule;
@@ -48,6 +49,34 @@ public class MediaUtils
                 .toString();
 
         final File path = ReadableMapUtils.hasAndNotNullReadableMap(options, "storageOptions")
+                && ReadableMapUtils.hasAndNotEmptyString(options.getMap("storageOptions"), "path")
+                ? new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), options.getMap("storageOptions").getString("path"))
+                : (!forceLocal ? Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                              : reactContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES));
+
+        File result = new File(path, filename);
+
+        try
+        {
+            path.mkdirs();
+            result.createNewFile();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            result = null;
+        }
+
+        return result;
+    }
+
+    public static @Nullable File createNewFile(@NonNull final Context reactContext,
+                                               @NonNull final ReadableMap options,
+                                               @NonNull final boolean forceLocal,
+                                               @NonNull String extension,
+                                               final String filename)
+    {
+       final File path = ReadableMapUtils.hasAndNotNullReadableMap(options, "storageOptions")
                 && ReadableMapUtils.hasAndNotEmptyString(options.getMap("storageOptions"), "path")
                 ? new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), options.getMap("storageOptions").getString("path"))
                 : (!forceLocal ? Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
@@ -149,10 +178,20 @@ public class MediaUtils
         scaledPhoto = Bitmap.createBitmap(photo, 0, 0, photo.getWidth(), photo.getHeight(), matrix, true);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         Bitmap.CompressFormat format = extension.equals("png") ? Bitmap.CompressFormat.PNG: Bitmap.CompressFormat.JPEG;
-        scaledPhoto.compress(format, result.quality, bytes);
+        scaledPhoto.compress(format, imageConfig.quality, bytes);
+
+        String originalName = imageConfig.original.getName();
+        String[] attachmentsConvertJPG = {};
+        if (options.hasKey("attachmentsConvertJPG")) attachmentsConvertJPG = options.getString("attachmentsConvertJPG").split(",");
+        for (String type : attachmentsConvertJPG) {
+            if (extension.equals(type)) extension = "jpg";
+        }
+        String[] originalNameArr = originalName.split("\\.");
+        originalNameArr[originalNameArr.length - 1] = extension;
+        String newFileName = TextUtils.join(".", originalNameArr);
 
         final boolean finalForceLocal = (requestCode != REQUEST_LAUNCH_IMAGE_CAPTURE) || forceLocal;
-        final File resized = createNewFile(context, options, finalForceLocal, extension);
+        final File resized = createNewFile(context, options, finalForceLocal, extension, newFileName);
 
         if (resized == null)
         {

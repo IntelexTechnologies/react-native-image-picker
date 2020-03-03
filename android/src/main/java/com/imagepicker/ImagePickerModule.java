@@ -79,6 +79,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   private ImageConfig imageConfig = new ImageConfig(null, null, 0, 0, 100, 0, false);
   private Boolean forceLocal = false;
   private List<String> resizeFileTypes;
+  private List<String> attachmentsConvertJPG;
   private double resizeMaxAspectRatio = Double.MAX_VALUE;
   @Deprecated
   private int videoQuality = 1;
@@ -447,10 +448,18 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     updatedResultResponse(uri, imageConfig.original.getAbsolutePath());
     double aspectRatio = initialWidth > initialHeight ? initialWidth / (double)initialHeight : initialHeight / (double)initialWidth;
     String extension = getExtensionFromFile(imageConfig.original.getName());
-    // don't create a new file if contraint are respected
-    if (imageConfig.useOriginal(initialWidth, initialHeight, result.currentRotation)
-        || aspectRatio > this.resizeMaxAspectRatio
-        || (this.resizeFileTypes != null && !this.resizeFileTypes.contains(extension)))
+    boolean mustResize = true;
+
+    if (imageConfig.useOriginal(initialWidth, initialHeight, result.currentRotation) || aspectRatio > this.resizeMaxAspectRatio) {
+      mustResize = false;
+      imageConfig = imageConfig.withQuality(100);
+      imageConfig = imageConfig.withMaxWidth(initialWidth);
+      imageConfig = imageConfig.withMaxHeight(initialHeight);
+    }
+
+    // don't create a new file if constraints are respected and file doesn't need conversion
+    if ((!mustResize || (this.resizeFileTypes != null && !this.resizeFileTypes.contains(extension)))
+        && (this.attachmentsConvertJPG != null && !this.attachmentsConvertJPG.contains(extension)))
     {
       responseHelper.putInt("width", initialWidth);
       responseHelper.putInt("height", initialHeight);
@@ -744,7 +753,12 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
             resizeFileTypes = Arrays.asList(fileTypes.split(",", 0));
         }
     }
-    
+    if (options.hasKey("attachmentsConvertJPG")) {
+      String fileTypes = options.getString("attachmentsConvertJPG").toLowerCase();
+      if(!fileTypes.isEmpty()) {
+          attachmentsConvertJPG = Arrays.asList(fileTypes.split(",", 0));
+      }
+    }
     if (options.hasKey("resizeMaxAspectRatio")) {
       resizeMaxAspectRatio = options.getDouble("resizeMaxAspectRatio");
     }
