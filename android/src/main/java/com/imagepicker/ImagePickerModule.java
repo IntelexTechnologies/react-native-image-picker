@@ -52,6 +52,7 @@ import java.util.List;
 import com.facebook.react.modules.core.PermissionListener;
 import com.facebook.react.modules.core.PermissionAwareActivity;
 
+import static com.imagepicker.Utils.getAppSpecificStorageUri;
 import static com.imagepicker.utils.MediaUtils.*;
 import static com.imagepicker.utils.MediaUtils.createNewFile;
 import static com.imagepicker.utils.MediaUtils.getResizedImage;
@@ -388,7 +389,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         break;
 
       case REQUEST_LAUNCH_IMAGE_LIBRARY:
-        uri = data.getData();
+        uri = getAppSpecificStorageUri(data.getData(), reactContext);
         String realPath = getRealPathFromURI(uri);
         final boolean isUrl = !TextUtils.isEmpty(realPath) &&
                 Patterns.WEB_URL.matcher(realPath).matches();
