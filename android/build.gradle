@@ -9,9 +9,11 @@ def computeVersionName() {
 
 buildscript {
     repositories {
+        mavenCentral()
     }
 
     dependencies {
+        classpath 'com.android.tools.build:gradle:+'
     }
 }
 
