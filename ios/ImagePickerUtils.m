@@ -58,7 +58,8 @@
         configuration = [[PHPickerConfiguration alloc] init];
     }
     
-    configuration.preferredAssetRepresentationMode = PHPickerConfigurationAssetRepresentationModeAutomatic;
+    // configuration.preferredAssetRepresentationMode = PHPickerConfigurationAssetRepresentationModeAutomatic;
+    configuration.preferredAssetRepresentationMode = PHPickerConfigurationAssetRepresentationModeCurrent;
     configuration.selectionLimit = [options[@"selectionLimit"] integerValue];
 
     if ([options[@"mediaType"] isEqualToString:@"video"]) {
