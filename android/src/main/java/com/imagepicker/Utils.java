@@ -148,16 +148,27 @@ public class Utils {
             e.printStackTrace();
             return new int[]{0, 0};
         }
+        String orientation = String.valueOf(ExifInterface.ORIENTATION_UNDEFINED);
+        try{
+            orientation = getOrientation(uri, reactContext);
+        }catch (IOException e){
+            e.printStackTrace();
+        }
 
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeStream(inputStream,null, options);
-        return new int[]{options.outWidth, options.outHeight};
+
+        if (needToSwapDimension(orientation)) {
+            return new int[]{options.outHeight, options.outWidth};
+        }else {
+            return new int[]{options.outWidth, options.outHeight};
+        }
     }
 
     static boolean hasPermission(final Activity activity) {
         final int writePermission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        return writePermission == PackageManager.PERMISSION_GRANTED ? true : false;
+        return writePermission == PackageManager.PERMISSION_GRANTED;
     }
 
     static String getBase64String(Uri uri, Context reactContext) {
@@ -184,6 +195,11 @@ public class Utils {
         return Base64.encodeToString(bytes, Base64.NO_WRAP);
     }
 
+    private static boolean needToSwapDimension(String orientation){
+        return orientation.equals(String.valueOf(ExifInterface.ORIENTATION_ROTATE_90))
+                || orientation.equals(String.valueOf(ExifInterface.ORIENTATION_ROTATE_270));
+    }
+
     // Resize image
     // When decoding a jpg to bitmap all exif meta data will be lost, so make sure to copy orientation exif to new file else image might have wrong orientations
     public static Uri resizeImage(Uri uri, Context context, Options options) {
@@ -199,8 +215,13 @@ public class Utils {
             InputStream imageStream = context.getContentResolver().openInputStream(uri);
             String mimeType =  getMimeTypeFromFileUri(uri);
             Bitmap b = BitmapFactory.decodeStream(imageStream);
-            b = Bitmap.createScaledBitmap(b, newDimens[0], newDimens[1], true);
             String originalOrientation = getOrientation(uri, context);
+
+            if (needToSwapDimension(originalOrientation)) {
+                b = Bitmap.createScaledBitmap(b, newDimens[1], newDimens[0], true);
+            }else {
+                b = Bitmap.createScaledBitmap(b, newDimens[0], newDimens[1], true);
+            }
 
             File file = createFile(context, getFileTypeFromMime(mimeType));
             OutputStream os = context.getContentResolver().openOutputStream(Uri.fromFile(file));
@@ -292,7 +313,7 @@ public class Utils {
             case "image/png": return "png";
             case "image/gif": return "gif";
         }
-        return MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+        return "jpg";
     }
 
     static void deleteFile(Uri uri) {
@@ -447,7 +468,6 @@ public class Utils {
         for(int i = 0; i < fileUris.size(); ++i) {
             Uri uri = fileUris.get(i);
 
-            // Call getAppSpecificStorageUri in the if block to avoid copying unsupported files
             if (isImageType(uri, context)) {
                 if (uri.getScheme().contains("content")) {
                     uri = getAppSpecificStorageUri(uri, context);
@@ -455,9 +475,6 @@ public class Utils {
                 uri = resizeImage(uri, context, options);
                 assets.pushMap(getImageResponseMap(uri, options, context));
             } else if (isVideoType(uri, context)) {
-                if (uri.getScheme().contains("content")) {
-                    uri = getAppSpecificStorageUri(uri, context);
-                }
                 assets.pushMap(getVideoResponseMap(uri, options, context));
             } else {
                 throw new RuntimeException("Unsupported file type");
