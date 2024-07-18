@@ -1,33 +1,17 @@
 # React Native Image Picker
 
-[![npm version](https://badge.fury.io/js/react-native-image-picker.svg)](https://badge.fury.io/js/react-native-image-picker)
-[![npm](https://img.shields.io/npm/dt/react-native-image-picker.svg)](https://npmcharts.com/compare/react-native-image-picker?minimal=true)
-![MIT](https://img.shields.io/dub/l/vibe-d.svg)
-![Platform - Android and iOS](https://img.shields.io/badge/platform-Android%20%7C%20iOS-yellow.svg)
-[![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/react-native-image-picker/Lobby)
+A React Native module that allows you to select a photo/video from the device library or camera.
 
-A React Native module that allows you to use native UI to select a photo/video from the device library or directly from the camera, like so:
+<p align="center">
+  <img src="https://img.shields.io/npm/dw/react-native-image-picker" />
+  <img src="https://img.shields.io/npm/v/react-native-image-picker" />
+</p>
 
-| iOS                                                                                                                   | Android                                                                                                                       |
-| --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| <img title="iOS" src="https://github.com/react-community/react-native-image-picker/blob/master/images/ios-image.png"> | <img title="Android" src="https://github.com/react-community/react-native-image-picker/blob/master/images/android-image.png"> |
+### Make sure you're reading the doc applicable to your version, for example if you're using version 3.8.0 go to tag 3.8.0 and read those docs. This doc is always that of main branch.
 
-#### _Before you open an issue_
+### Also read version release notes for any breaking changes especially if you're updating the major version.
 
-This library started as a basic bridge of the native iOS image picker, and I want to keep it that way. As such, functionality beyond what the native `UIImagePickerController` supports will not be supported here. **Multiple image selection, more control over the crop tool, and landscape support** are things missing from the native iOS functionality - **not issues with my library**. If you need these things, [react-native-image-crop-picker](https://github.com/ivpusic/react-native-image-crop-picker) might be a better choice for you.
-
-## React Native Compatibility
-To use this library you need to ensure you match up with the correct version of React Native you are using.
-
-p.s. React Native introduced AndroidX support in 0.60, which is a **breaking change** for most libraries (incl. this one) using native Android functionality.
-
-| `@react-native-community/imagepicker` version | Required React Native Version                                                     |
-| ----------------------------------------- | --------------------------------------------------------------------------------- |
-| `1.x.x`                                   | `>= 0.60` or `>= 0.59` if using [Jetifier](https://github.com/mikehardy/jetifier) |
-| `0.x.x`                                   | `<= 0.59`                                                                         |
-
-
-## Getting Started
+# Install
 
 ```
 yarn add react-native-image-picker
@@ -39,77 +23,117 @@ cd ios && pod install
 react-native link react-native-image-picker
 ```
 
-You will also need to add `UsageDescription` on iOS and some permissions on Android, refer to the [Install doc](docs/Install.md).
+## Post-install Steps
 
-## Usage
+### iOS
 
-```javascript
-import ImagePicker from 'react-native-image-picker';
+Add the appropriate keys to your Info.plist,
 
-// More info on all the options is below in the API Reference... just some common use cases shown here
-const options = {
-  title: 'Select Avatar',
-  customButtons: [{ name: 'fb', title: 'Choose Photo from Facebook' }],
-  storageOptions: {
-    skipBackup: true,
-    path: 'images',
-  },
-};
+If you are allowing user to select image/video from photos, add `NSPhotoLibraryUsageDescription`.
 
-/**
- * The first arg is the options object for customization (it can also be null or omitted for default options),
- * The second arg is the callback which sends object: response (more info in the API Reference)
- */
-ImagePicker.showImagePicker(options, (response) => {
-  console.log('Response = ', response);
+If you are allowing user to capture image add `NSCameraUsageDescription` key also.
 
-  if (response.didCancel) {
-    console.log('User cancelled image picker');
-  } else if (response.error) {
-    console.log('ImagePicker Error: ', response.error);
-  } else if (response.customButton) {
-    console.log('User tapped custom button: ', response.customButton);
-  } else {
-    const source = { uri: response.uri };
+If you are allowing user to capture video add `NSCameraUsageDescription` add `NSMicrophoneUsageDescription` key also.
 
-    // You can also display the image using data:
-    // const source = { uri: 'data:image/jpeg;base64,' + response.data };
+### Android
 
-    this.setState({
-      avatarSource: source,
-    });
-  }
-});
+No permissions required (`saveToPhotos` requires permission [check](#note-on-file-storage)).
+
+Note: This library does not require Manifest.permission.CAMERA, if your app declares as using this permission in manifest then you have to obtain the permission before using `launchCamera`.
+
+# API Reference
+
+## Methods
+
+```js
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 ```
 
-Then later, if you want to display this image in your render() method:
+### `launchCamera()`
 
-```javascript
-<Image source={this.state.avatarSource} style={styles.uploadAvatar} />
+Launch camera to take photo or video.
+
+```js
+launchCamera(options?, callback);
+
+// You can also use as a promise without 'callback':
+const result = await launchCamera(options?);
 ```
 
-### Directly Launching the Camera or Image Library
+See [Options](#options) for further information on `options`.
 
-To Launch the Camera or Image Library directly (skipping the alert dialog) you can
-do the following:
+The `callback` will be called with a response object, refer to [The Response Object](#the-response-object).
 
-```javascript
-// Launch Camera:
-ImagePicker.launchCamera(options, (response) => {
-  // Same code as in above section!
-});
+### `launchImageLibrary`
 
-// Open Image Library:
-ImagePicker.launchImageLibrary(options, (response) => {
-  // Same code as in above section!
-});
+Launch gallery to pick image or video.
+
+```js
+launchImageLibrary(options?, callback)
+
+// You can also use as a promise without 'callback':
+const result = await launchImageLibrary(options?);
 ```
 
-#### Notes
+See [Options](#options) for further information on `options`.
 
-On iOS, don't assume that the absolute uri returned will persist. See [#107](/../../issues/107)
+The `callback` will be called with a response object, refer to [The Response Object](#the-response-object).
 
-For more, read the [API Reference](docs/Reference.md).
+## Options
+
+| Option         | iOS | Android | Web | Description                                                                                                                         |
+| -------------- | --- | ------- | --- |------------------------------------------------------------------------------------------------------------------------------------ |
+| mediaType      | OK  | OK      | OK  | 'photo' or 'video' or 'mixed'(mixed supported only for launchImageLibrary, to pick an photo or video). Web only suppots 'photo' for now.                             |
+| maxWidth       | OK  | OK      | NO | To resize the image                                                                                                                       |
+| maxHeight      | OK  | OK      | NO | To resize the image                                                                                                                       |
+| videoQuality   | OK  | OK      | NO | 'low', 'medium', or 'high' on iOS, 'low' or 'high' on Android                                                                             |
+| durationLimit  | OK  | OK      | NO | Video max duration in seconds                                                                                                             |
+| quality        | OK  | OK      | NO | 0 to 1, photos                                                                                                                            |
+| cameraType     | OK  | OK      | NO | 'back' or 'front'. May not be supported in few android devices                                                                            |
+| includeBase64  | OK  | OK      | OK | If true, creates base64 string of the image (Avoid using on large image files due to performance)                                         |                                                   |
+| includeExtra   | OK  | OK      | NO | If true, will include extra data which requires library permissions to be requested (i.e. exif data)                                      |
+| saveToPhotos   | OK  | OK      | NO |(Boolean) Only for launchCamera, saves the image/video file captured to public photo                                                      |
+| selectionLimit | OK  | OK      | OK |Default is `1`, use `0` to allow any number of files. Only iOS version >= 14 & Android version >= 13 support `0` and also it supports providing any integer value |
+| presentationStyle | OK  | NO      | NO |Controls how the picker is presented. 'pageSheet', 'fullScreen', 'pageSheet', 'formSheet', 'popover', 'overFullScreen', 'overCurrentContext'. Default is 'currentContext' |
+
+## The Response Object
+
+| key          | iOS | Android | Web | Description                                                         |
+| ------------ | --- | ------- | --- | ------------------------------------------------------------------- |
+| didCancel    | OK  | OK      | OK  | `true` if the user cancelled the process                            |
+| errorCode    | OK  | OK      | OK  | Check [ErrorCode](#ErrorCode) for all error codes                   |
+| errorMessage | OK  | OK      | OK  | Description of the error, use it for debug purpose only             |
+| assets       | OK  | OK      | OK  | Array of the selected media, [refer to Asset Object](#Asset-Object) |
+
+## Asset Object
+
+| key       | iOS | Android | Web | Photo/Video | Requires Permissions | Description               |
+| --------- | --- | ------- | --- | ----------- | -------------------- | ------------------------- |
+| base64    | OK  | OK      | OK  | PHOTO ONLY  | NO                   | The base64 string of the image (photos only) |
+| uri       | OK  | OK      | OK  | BOTH        | NO                   | The file uri in app specific cache storage. Except when picking **video from Android gallery** where you will get read only content uri, to get file uri in this case copy the file to app specific storage using any react-native library. For web it uses the base64 as uri. |
+| width     | OK  | OK      | OK  | BOTH        | NO                   | Asset dimensions                |
+| height    | OK  | OK      | OK  | BOTH        | NO                   | Asset dimensions                |
+| fileSize  | OK  | OK      | NO  | BOTH        | NO                   | The file size                                 |
+| type      | OK  | OK      | NO  | BOTH        | NO                   | The file type                                 |
+| fileName  | OK  | OK      | NO  | BOTH        | NO                   | The file name                                 |
+| duration  | OK  | OK      | NO  | VIDEO ONLY  | NO                   | The selected video duration in seconds        |
+| bitrate   | --- | OK      | NO  | VIDEO ONLY  | NO                   | The average bitrate (in bits/sec) of the selected video, if available. (Android only) |
+| timestamp | OK  | OK      | NO  | BOTH        | YES                  | Timestamp of the asset. Only included if 'includeExtra' is true |
+| id        | OK  | OK      | NO  | BOTH        | YES                  | local identifier of the photo or video. On Android, this is the same as fileName |
+
+## Note on file storage
+
+Image/video captured via camera will be stored in temporary folder so will be deleted any time, so don't expect it to persist. Use `saveToPhotos: true` (default is false) to save the file in the public photos. `saveToPhotos` requires WRITE_EXTERNAL_STORAGE permission on Android 28 and below (You have to obtain the permission, the library does not).
+
+For web this doesn't work.
+
+## ErrorCode
+
+| Code               | Description                                       |
+| ------------------ | ------------------------------------------------- |
+| camera_unavailable | camera not available on device                    |
+| permission         | Permission not satisfied                          |
+| others             | other errors (check errorMessage for description) |
 
 ## License
 
