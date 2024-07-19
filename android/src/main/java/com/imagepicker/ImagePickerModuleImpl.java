@@ -18,12 +18,13 @@ import com.facebook.react.module.annotations.ReactModule;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.imagepicker.Utils.*;
 
-@ReactModule(name = ImagePickerModule.NAME)
-public class ImagePickerModule extends ReactContextBaseJavaModule implements ActivityEventListener {
-    static final String NAME = "ImagePickerManager";
+public class ImagePickerModuleImpl implements ActivityEventListener {
+    static final String NAME = "ImagePicker";
 
     // Public to let consuming apps hook into the image picker response
     public static final int REQUEST_LAUNCH_IMAGE_CAPTURE = 13001;
@@ -32,32 +33,25 @@ public class ImagePickerModule extends ReactContextBaseJavaModule implements Act
 
     private Uri fileUri;
 
-    final ReactApplicationContext reactContext;
+    private ReactApplicationContext reactContext;
 
     Callback callback;
 
     Options options;
     Uri cameraCaptureURI;
 
-    public ImagePickerModule(ReactApplicationContext reactContext) {
-        super(reactContext);
+    public ImagePickerModuleImpl(ReactApplicationContext reactContext) {
         this.reactContext = reactContext;
         this.reactContext.addActivityEventListener(this);
     }
 
-    @Override
-    public String getName() {
-        return NAME;
-    }
-
-    @ReactMethod
     public void launchCamera(final ReadableMap options, final Callback callback) {
         if (!isCameraAvailable(reactContext)) {
             callback.invoke(getErrorMap(errCameraUnavailable, null));
             return;
         }
 
-        final Activity currentActivity = getCurrentActivity();
+        final Activity currentActivity = this.reactContext.getCurrentActivity();
         if (currentActivity == null) {
             callback.invoke(getErrorMap(errOthers, "Activity error"));
             return;
@@ -112,9 +106,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule implements Act
         }
     }
 
-    @ReactMethod
     public void launchImageLibrary(final ReadableMap options, final Callback callback) {
-        final Activity currentActivity = getCurrentActivity();
+        final Activity currentActivity = this.reactContext.getCurrentActivity();
         if (currentActivity == null) {
             callback.invoke(getErrorMap(errOthers, "Activity error"));
             return;
@@ -173,13 +166,17 @@ public class ImagePickerModule extends ReactContextBaseJavaModule implements Act
     }
 
     void onAssetsObtained(List<Uri> fileUris) {
-        try {
-            callback.invoke(getResponseMap(fileUris, options, reactContext));
-        } catch (RuntimeException exception) {
-            callback.invoke(getErrorMap(errOthers, exception.getMessage()));
-        } finally {
-            callback = null;
-        }
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        executor.submit(() -> {
+            try {
+                callback.invoke(getResponseMap(fileUris, options, reactContext));
+            } catch (RuntimeException exception) {
+                callback.invoke(getErrorMap(errOthers, exception.getMessage()));
+            } finally {
+                callback = null;
+            }
+        });
     }
 
     @Override
@@ -195,12 +192,12 @@ public class ImagePickerModule extends ReactContextBaseJavaModule implements Act
                 deleteFile(fileUri);
             }
             try {
-              callback.invoke(getCancelMap());
-              return;
+                callback.invoke(getCancelMap());
+                return;
             } catch (RuntimeException exception) {
-              callback.invoke(getErrorMap(errOthers, exception.getMessage()));
+                callback.invoke(getErrorMap(errOthers, exception.getMessage()));
             } finally {
-              callback = null;
+                callback = null;
             }
         }
 
@@ -228,5 +225,6 @@ public class ImagePickerModule extends ReactContextBaseJavaModule implements Act
     }
 
     @Override
-    public void onNewIntent(Intent intent) { }
+    public void onNewIntent(Intent intent) {
+    }
 }
