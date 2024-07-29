@@ -202,11 +202,6 @@ public class Utils {
                 || orientation.equals(String.valueOf(ExifInterface.ORIENTATION_ROTATE_270));
     }
 
-    private static boolean needToSwapDimension(String orientation){
-        return orientation.equals(String.valueOf(ExifInterface.ORIENTATION_ROTATE_90))
-                || orientation.equals(String.valueOf(ExifInterface.ORIENTATION_ROTATE_270));
-    }
-
     // Resize image
     // When decoding a jpg to bitmap all exif meta data will be lost, so make sure to copy orientation exif to new file else image might have wrong orientations
     public static Uri resizeImage(Uri uri, Context context, Options options) {
@@ -328,7 +323,7 @@ public class Utils {
             case "image/gif":
                 return "gif";
         }
-        return "jpg";
+        return MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
     }
 
     static void deleteFile(Uri uri) {
